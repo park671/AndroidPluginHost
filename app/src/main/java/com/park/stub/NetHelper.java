@@ -1,38 +1,51 @@
 package com.park.stub;
 
+import java.io.BufferedReader;
 import java.io.FileOutputStream;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.Socket;
+import java.net.URL;
+import java.net.URLConnection;
 
 import android.content.Context;
 
+import com.park.plugin.dynamic.util.FileUtil;
+
 public class NetHelper {
 
-  Socket mSocket;
-  InputStream mInputStream;
-  OutputStream mOutputStream;
-  Context mContext;
+  static Socket mSocket;
+  static InputStream mInputStream;
+  static OutputStream mOutputStream;
 
-  public NetHelper(Context context) {
-    mContext = context;
-  }
-
-  public void connect() throws Throwable {
+  public static void connect() throws Throwable {
     mSocket = new Socket(Config.Ip, Config.Port);
     mOutputStream = mSocket.getOutputStream();
     mInputStream = mSocket.getInputStream();
   }
 
-  public void download(FileOutputStream fileOutputStream) throws Throwable{
-    int len = 0;
-    byte[] buffer = new byte[1024];
-    while((len = mInputStream.read(buffer)) != -1){
-      fileOutputStream.write(buffer, 0, len);
-    }
+  public static void downloadByServer(FileOutputStream fileOutputStream) throws Throwable {
+    FileUtil.copy(mInputStream, fileOutputStream);
     fileOutputStream.flush();
     fileOutputStream.close();
+  }
 
+  public static String downloadVersionProp() throws Throwable{
+    URL url = new URL(Config.VersionPropUrl);
+    URLConnection urlConnection = url.openConnection();
+    InputStream in = urlConnection.getInputStream();
+    BufferedReader reader = new BufferedReader(new InputStreamReader(in));
+    return reader.readLine();
+  }
+
+  public static void downloadByHttps(FileOutputStream fileOutputStream) throws Throwable {
+    URL url = new URL(Config.PluginUrl);
+    URLConnection urlConnection = url.openConnection();
+    InputStream in = urlConnection.getInputStream();
+    FileUtil.copy(in, fileOutputStream);
+    fileOutputStream.flush();
+    fileOutputStream.close();
   }
 
 }
