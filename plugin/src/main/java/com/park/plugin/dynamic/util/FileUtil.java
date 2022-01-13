@@ -16,6 +16,18 @@ import android.content.Context;
 
 public class FileUtil {
 
+  public static void deleteDir(File file){
+    if(!file.exists()){
+      return;
+    }
+    if(file.isDirectory()){
+      for(File subFile : file.listFiles()){
+        deleteDir(subFile);
+      }
+    }
+    file.deleteOnExit();
+  }
+
   public static long copy(final InputStream inputStream, final OutputStream outputStream) {
     try {
       return copyLarge(inputStream, outputStream, new byte[8192]);

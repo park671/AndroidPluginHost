@@ -14,6 +14,7 @@ import android.os.IBinder;
 import android.util.Log;
 
 import com.park.plugin.dynamic.PluginManager;
+import com.park.plugin.dynamic.StubActivity;
 
 public class BaseInstrumentation extends Instrumentation {
 
@@ -90,6 +91,9 @@ public class BaseInstrumentation extends Instrumentation {
           Log.d(TAG, realActivity + " is plugin activity.");
         }catch (Throwable ignore){}
         needHook = false;
+        if(activityClazz == null){
+          activityClazz = StubActivity.class;
+        }
         return (Activity) activityClazz.newInstance();
       }
     }

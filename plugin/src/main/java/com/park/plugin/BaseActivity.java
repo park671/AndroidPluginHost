@@ -30,6 +30,9 @@ public class BaseActivity extends Activity {
   @Override
   protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
+    if(PluginManager.getInstance().getPackageInfo() == null || PluginManager.getInstance().getPackageInfo().activities == null){
+      return;
+    }
     for (ActivityInfo activityInfo : PluginManager.getInstance().getPackageInfo().activities) {
       if (activityInfo.name.equalsIgnoreCase(this.getClass().getName())) {
         String label = activityInfo.loadLabel(getPackageManager()).toString();

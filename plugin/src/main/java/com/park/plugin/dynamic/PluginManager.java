@@ -10,6 +10,7 @@ import android.content.res.AssetManager;
 import android.content.res.Resources;
 
 import com.park.plugin.dynamic.hooked.PluginResources;
+import com.park.plugin.dynamic.util.FileUtil;
 
 import dalvik.system.DexClassLoader;
 
@@ -25,6 +26,11 @@ public class PluginManager {
   }
 
   public PluginManager() {
+  }
+
+  public void clearOat(Context context) {
+    File file = new File(context.getCacheDir(), "oat");
+    FileUtil.deleteDir(file);
   }
 
   public void loadPath(Context context, String filePath) {

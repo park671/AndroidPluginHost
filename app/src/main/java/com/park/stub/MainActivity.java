@@ -7,14 +7,15 @@ import android.app.Activity;
 import android.content.ComponentName;
 import android.content.Intent;
 import android.os.Bundle;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
 import android.widget.TextView;
 
 import com.park.plugin.dynamic.PluginLoadHelper;
-import com.park.plugin.dynamic.util.FileUtil;
 import com.park.plugin.dynamic.PluginManager;
 import com.park.plugin.dynamic.StubActivity;
+import com.park.plugin.dynamic.util.FileUtil;
 
 public class MainActivity extends Activity {
 
@@ -56,8 +57,8 @@ public class MainActivity extends Activity {
     startCheckByHttps();
   }
 
-  private void setMsg(String msg){
-    runOnUiThread(()-> mTextView.setText(
+  private void setMsg(String msg) {
+    runOnUiThread(() -> mTextView.setText(
         mTextView.getText().toString() + "\n" + msg));
   }
 
@@ -66,39 +67,56 @@ public class MainActivity extends Activity {
       @Override
       public void run() {
         setMsg("start check version.");
-        String nativeVersion = "";
         File versionFile = new File(getCacheDir(), "version.prop");
-        try {
-          if (!versionFile.exists()) {
-            versionFile.createNewFile();
-          }else {
-            nativeVersion = FileUtil.getFileFirstLine(versionFile);
+        String nativeVersion = getNativeVersion(versionFile);
+        String serverVersion = getServerVersion();
+        setMsg("native:" + nativeVersion + ", server:" + serverVersion);
+
+        if (nativeVersion == null ||
+            (!nativeVersion.equalsIgnoreCase(serverVersion) && !TextUtils.isEmpty(serverVersion))) {
+          PluginManager.getInstance().clearOat(MainActivity.this);
+          File outputFile = FileUtil.createNewFileInCache(MainActivity.this, "serverPlugin.apk");
+          try {
+            setMsg("start download by https.");
+            FileUtil.clearAndWriteFile(versionFile, serverVersion);
+            NetHelper.downloadByHttps(new FileOutputStream(outputFile));
+            setMsg("download success.");
+          } catch (Throwable tr) {
+            setMsg("download fail:" + tr.getMessage());
+            tr.printStackTrace();
           }
-        } catch (Throwable throwable) {
-          throwable.printStackTrace();
+        } else {
+          setMsg("no need to download.");
         }
-        setMsg("get server version.");
+        PluginManager.getInstance().loadPath(MainActivity.this,
+            new File(getCacheDir(), "serverPlugin.apk").getAbsolutePath());
+        Intent intent = new Intent();
+        intent.setComponent(new ComponentName(getPackageName(), "com.park.plugin.MainActivity"));
+        startActivity(intent);
+      }
+
+      private String getServerVersion() {
         String serverVersion = "";
         try {
           serverVersion = NetHelper.downloadVersionProp();
         } catch (Throwable throwable) {
           throwable.printStackTrace();
         }
-        setMsg("native:" + nativeVersion + ", server:" + serverVersion);
-        File outputFile = FileUtil.createNewFileInCache(MainActivity.this, "serverPlugin.apk");
-        if(nativeVersion == null || !nativeVersion.equalsIgnoreCase(serverVersion)){
-          try {
-            setMsg("start download by https.");
-            FileUtil.clearAndWriteFile(versionFile, serverVersion);
-            NetHelper.downloadByHttps(new FileOutputStream(outputFile));
-            setMsg("download success.");
-          }catch (Throwable tr){
-            tr.printStackTrace();
+        return serverVersion;
+      }
+
+      private String getNativeVersion(File versionFile) {
+        String nativeVersion = "";
+        try {
+          if (!versionFile.exists()) {
+            versionFile.createNewFile();
+          } else {
+            nativeVersion = FileUtil.getFileFirstLine(versionFile);
           }
-        }else {
-          setMsg("no need to download.");
+        } catch (Throwable throwable) {
+          throwable.printStackTrace();
         }
-        PluginManager.getInstance().loadPath(MainActivity.this, outputFile.getAbsolutePath());
+        return nativeVersion;
       }
     }.start();
   }
